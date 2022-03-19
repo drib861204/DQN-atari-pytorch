@@ -9,6 +9,7 @@ import models
 import argparse
 import time
 import os
+from Pendulum import *  # added by Ben
 
 def epsilon_compute(frame_id, epsilon_max=1, epsilon_min=0.05, epsilon_decay=100000):
     return epsilon_min + (epsilon_max - epsilon_min) * np.exp(-frame_id / epsilon_decay)
@@ -107,14 +108,24 @@ def play(env, agent, stack_frames, img_size, render=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--type', '-t', nargs='?', type=str, default="train", help='train / test')
-    train_test = parser.parse_args().type
-    
-    stack_frames = 4
-    img_size = (84,84)
+    parser.add_argument("-r", "--render_evals", type=int, default=0, choices=[0, 1],
+                        help="Rendering the evaluation runs if set to 1, default=0")
+    parser.add_argument("-seed", type=int, default=0, help="Seed for the env and torch network weights, default is 0")
+
+    #train_test = parser.parse_args().type
+    args = parser.parse_args()
+    train_test = args.type
+
+    #stack_frames = 4
+    #img_size = (84,84)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    env_name = "PongNoFrameskip-v4"
-    env_ = gym.make(env_name)
-    env = PongEnvWrapper(env_, k=stack_frames, img_size=img_size)
+    #env_name = "PongNoFrameskip-v4"
+    #env_ = gym.make(env_name)
+    #env = PongEnvWrapper(env_, k=stack_frames, img_size=img_size)
+    env = Pendulum(args.render_evals, args.seed)
+
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
 
     agent = dqn.DeepQNetwork(
         n_actions = env.action_space.n,
@@ -126,6 +137,8 @@ if __name__ == "__main__":
         replace_target_iter = 1000, 
         memory_size = 10000,
         batch_size = 32,)
+
+    print(env.action_space.n)
 
     if train_test == "train":
         train(env, agent, stack_frames, img_size, "save", max_steps=400000)
