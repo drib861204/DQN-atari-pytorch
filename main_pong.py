@@ -11,6 +11,12 @@ import time
 import os
 from Pendulum_v2 import *  # added by Ben
 
+EPISODES = 1 #5000
+RENDER = 0
+SEED = 0
+SAVED_MODEL = None
+TRIAL = 0
+
 def epsilon_compute(frame_id, epsilon_max=1, epsilon_min=0.05, epsilon_decay=100000):
     return epsilon_min + (epsilon_max - epsilon_min) * np.exp(-frame_id / epsilon_decay)
 
@@ -24,7 +30,7 @@ def train(env, agent, stack_frames, img_size, save_path="save", max_steps=100000
     episode = 0
     while True:
         # Reset environment.
-        state = env.reset()
+        state = env.reset(SAVED_MODEL, SEED)
 
         # Initialize information.
         step = 0
@@ -72,7 +78,7 @@ def train(env, agent, stack_frames, img_size, save_path="save", max_steps=100000
 
 def play(env, agent, stack_frames, img_size, render=False):
     # Reset environment.
-    state = env.reset()
+    state = env.reset(SAVED_MODEL, SEED)
     img_buffer = [Image.fromarray(state[0]*255)]
 
     # Initialize information.
@@ -108,9 +114,6 @@ def play(env, agent, stack_frames, img_size, render=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--type', '-t', nargs='?', type=str, default="train", help='train / test')
-    parser.add_argument("-r", "--render_evals", type=int, default=0, choices=[0, 1],
-                        help="Rendering the evaluation runs if set to 1, default=0")
-    parser.add_argument("-seed", type=int, default=0, help="Seed for the env and torch network weights, default is 0")
 
     #train_test = parser.parse_args().type
     args = parser.parse_args()
@@ -122,10 +125,10 @@ if __name__ == "__main__":
     #env_name = "PongNoFrameskip-v4"
     #env_ = gym.make(env_name)
     #env = PongEnvWrapper(env_, k=stack_frames, img_size=img_size)
-    env = Pendulum(args.render_evals, args.seed)
+    env = Pendulum(RENDER, SEED)
 
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
+    torch.manual_seed(SEED)
+    np.random.seed(SEED)
 
     agent = dqn.DeepQNetwork(
         n_actions = env.action_space.n,
@@ -133,7 +136,7 @@ if __name__ == "__main__":
         input_shape = env.observation_space.shape[0],
         qnet = models.QNet,
         device = device,
-        learning_rate = 2e-4, 
+        learning_rate = 2e-4,
         reward_decay = 0.99,
         replace_target_iter = 1000, 
         memory_size = 10000,

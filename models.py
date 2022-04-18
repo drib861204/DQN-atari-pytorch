@@ -5,8 +5,18 @@ import torch.nn as nn
 class QNet(nn.Module):
     def __init__(self, input_shape, n_actions):
         super(QNet, self).__init__()
+
+        self.net = nn.Sequential(
+            nn.Linear(input_shape, 24),
+            nn.ReLU(),
+            nn.Linear(24, 24),
+            nn.ReLU(),
+            nn.Linear(24, n_actions),
+        )
+        '''
         self.conv = nn.Sequential(
-            nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4),
+            #nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4),
+            nn.Conv2d(input_shape, 32, kernel_size=8, stride=4),
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=4, stride=2),
             nn.ReLU(),
@@ -22,14 +32,16 @@ class QNet(nn.Module):
             nn.ReLU(),
             nn.Linear(512, n_actions),
         )
-    
+        
     def _get_conv_out(self, shape):
-        o = self.conv(torch.zeros(1, *shape))
+        #o = self.conv(torch.zeros(1, *shape))
+        o = self.conv(torch.zeros(1, shape))
         return int(np.prod(o.size()))
-
+        '''
     def forward(self, x):
-        conv_out = self.conv(x)
-        out = self.fc(conv_out)
+        #conv_out = self.conv(x)
+        #out = self.fc(conv_out)
+        out = self.net(x)
         return out
 
 import torch.nn.functional as F
@@ -40,7 +52,8 @@ class QNetSoft(nn.Module):
         super(QNetSoft, self).__init__()
         self.reward_scale = reward_scale
         self.conv = nn.Sequential(
-            nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4),
+            #nn.Conv2d(input_shape[0], 32, kernel_size=8, stride=4),
+            nn.Conv2d(input_shape, 32, kernel_size=8, stride=4),
             nn.ReLU(),
             nn.BatchNorm2d(32),
             nn.Conv2d(32, 64, kernel_size=4, stride=2),
@@ -61,7 +74,8 @@ class QNetSoft(nn.Module):
         )
     
     def _get_conv_out(self, shape):
-        o = self.conv(torch.zeros(1, *shape))
+        #o = self.conv(torch.zeros(1, *shape))
+        o = self.conv(torch.zeros(1, shape))
         return int(np.prod(o.size()))
 
     def forward(self, x):

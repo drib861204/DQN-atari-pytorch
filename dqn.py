@@ -79,10 +79,12 @@ class DeepQNetwork():
 
     def init_memory(self):
         self.memory = {
-            "s": np.zeros((self.memory_size, *self.input_shape)),
+            #"s": np.zeros((self.memory_size, *self.input_shape)),
+            "s": np.zeros((self.memory_size, self.input_shape)),
             "a": np.zeros((self.memory_size, 1)),
             "r": np.zeros((self.memory_size, 1)),
-            "s_": np.zeros((self.memory_size, *self.input_shape)),
+            #"s_": np.zeros((self.memory_size, *self.input_shape)),
+            "s_": np.zeros((self.memory_size, self.input_shape)),
             "done": np.zeros((self.memory_size, 1)),
         }
 
