@@ -1,5 +1,5 @@
 import numpy as np
-from PIL import Image
+#from PIL import Image
 import matplotlib.pyplot as plt
 import gym
 from env_wrapper import PongEnvWrapper
@@ -9,13 +9,21 @@ import models
 import argparse
 import time
 import os
+from torch.utils.tensorboard import SummaryWriter
+from collections import deque
 from Pendulum_v2 import *  # added by Ben
 
 EPISODES = 1 #5000
-RENDER = 0
+RENDER = 1
 SEED = 0
 SAVED_MODEL = None
-TRIAL = 0
+TRIAL = 4
+
+def timer(start, end):
+    """ Helper to print training time """
+    hours, rem = divmod(end - start, 3600)
+    minutes, seconds = divmod(rem, 60)
+    print("\nTraining Time:  {:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds))
 
 def epsilon_compute(frame_id, epsilon_max=1, epsilon_min=0.05, epsilon_decay=100000):
     return epsilon_min + (epsilon_max - epsilon_min) * np.exp(-frame_id / epsilon_decay)
@@ -25,9 +33,10 @@ def save_gif(img_buffer, fname, gif_path="gif"):
         os.makedirs(gif_path)
     img_buffer[0].save(os.path.join(gif_path, fname), save_all=True, append_images=img_buffer[1:], duration=1, loop=1)
 
-def train(env, agent, stack_frames, img_size, save_path="save", max_steps=1000000):
+def train(env, agent, save_path="save", max_steps=1000000):
     total_step = 0
     episode = 0
+    scores_window = deque(maxlen=100)
     while True:
         # Reset environment.
         state = env.reset(SAVED_MODEL, SEED)
@@ -62,13 +71,16 @@ def train(env, agent, stack_frames, img_size, save_path="save", max_steps=100000
             
             if total_step % 10000 == 0:
                 print("\nSave Model ...")
-                agent.save_load_model(op="save", path=save_path, fname="qnet.pt")
-                print("Generate GIF ...")
-                img_buffer = play(env, agent, stack_frames, img_size)
-                save_gif(img_buffer, "train_" + str(total_step).zfill(6) + ".gif")
-                print("Done !!")
+                agent.save_load_model(op="save", path=save_path, fname=f"qnet_{TRIAL}.pt")
+                play(env, agent)
+                #print("Generate GIF ...")
+                #img_buffer = play(env, agent, stack_frames, img_size)
+                #save_gif(img_buffer, "train_" + str(total_step).zfill(6) + ".gif")
+                #print("Done !!")
 
             if done or step>2000:
+                scores_window.append(total_reward)
+                writer.add_scalar("Average100", np.mean(scores_window), total_step)
                 episode += 1
                 print()
                 break
@@ -76,15 +88,15 @@ def train(env, agent, stack_frames, img_size, save_path="save", max_steps=100000
         if total_step > max_steps:
             break
 
-def play(env, agent, stack_frames, img_size, render=False):
+def play(env, agent):
     # Reset environment.
     state = env.reset(SAVED_MODEL, SEED)
-    img_buffer = [Image.fromarray(state[0]*255)]
+    #img_buffer = [Image.fromarray(state[0]*255)]
 
     # Initialize information.
     step = 0
     total_reward = 0
-    loss = 0.
+    #loss = 0.
 
     # One episode.
     while True:
@@ -93,10 +105,10 @@ def play(env, agent, stack_frames, img_size, render=False):
 
         # Get next stacked state.
         state_next, reward, done, info = env.step(action)
-        if step % 2 == 0:
-            img_buffer.append(Image.fromarray(state_next[0]*255))
-        if render:
-            env.render() # Cant't use in colab.
+        #if step % 2 == 0:
+        #    img_buffer.append(Image.fromarray(state_next[0]*255))
+        if RENDER:
+            env.render(1) # Cant't use in colab.
 
         # Store transition and learn.
         total_reward += reward
@@ -109,7 +121,7 @@ def play(env, agent, stack_frames, img_size, render=False):
             print()
             break
 
-    return img_buffer
+    #return img_buffer
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -119,13 +131,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
     train_test = args.type
 
-    stack_frames = 4
-    img_size = (84,84)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if train_test == "train":
+        writer = SummaryWriter(f"runs/rwip_{TRIAL}")
+
+    #stack_frames = 4
+    #img_size = (84,84)
     #env_name = "PongNoFrameskip-v4"
     #env_ = gym.make(env_name)
     #env = PongEnvWrapper(env_, k=stack_frames, img_size=img_size)
     env = Pendulum(RENDER, SEED)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device: {}".format(device))
 
     torch.manual_seed(SEED)
     np.random.seed(SEED)
@@ -142,11 +158,18 @@ if __name__ == "__main__":
         memory_size = 10000,
         batch_size = 32,)
 
+    t0 = time.time()
+
     if train_test == "train":
-        train(env, agent, stack_frames, img_size, "save", max_steps=400000)
+        train(env, agent, "save", max_steps=400000)
+        t1 = time.time()
+        timer(t0, t1)
+        writer.close()
     elif train_test == "test":
-        agent.save_load_model(op="load", path="save", fname="qnet.pt")
-        img_buffer = play(env, agent, stack_frames, img_size)
-        save_gif(img_buffer, "test.gif")
+        agent.save_load_model(op="load", path="save", fname=f"qnet_{TRIAL}.pt")
+        for _ in range(3):
+            play(env, agent)
+        #img_buffer = play(env, agent, stack_frames, img_size)
+        #save_gif(img_buffer, "test.gif")
     else:
         print("Wrong args.")

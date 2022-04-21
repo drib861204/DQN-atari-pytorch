@@ -92,7 +92,7 @@ class Pendulum(gym.Env):
         #super().reset(seed=seed)
         #self._np_random, seed = seeding.np_random(seed)
 
-        reset_angle = 10*pi/180
+        reset_angle = 3*pi/180
 
         if saved == None:
             reset_high = np.array([reset_angle, self.max_q1dot, self.wheel_max_speed])
@@ -161,6 +161,7 @@ class Pendulum(gym.Env):
 
         #torque = action * action_scale
         #torque = np.clip(torque, -self.max_torque, self.max_torque)
+        #print(action)
 
         if action == 0:
             torque = 0
@@ -168,8 +169,8 @@ class Pendulum(gym.Env):
             torque = -self.max_torque
         elif action == 2:
             torque = self.max_torque
-        else:
-            torque = 1000000
+
+        # torque = action*0.01-15
 
         #Ip = m2*l2**2+I1+I2 + 2*l1*m1*l1**2+(1-2*l1)*m1*(0.5*(1-2*l1)+2*l1)**2
         #a = (m1*l1+m2*l2)*g*sin(angle_normalize(q1))
@@ -187,10 +188,10 @@ class Pendulum(gym.Env):
         self.state = (q1, q1_dot, q2_dot)
 
         done = bool(
-            q1 < -self.max_q1
-            or q1 > self.max_q1
-            or q1_dot < -self.max_q1dot
-            or q1_dot > self.max_q1dot
+            q1 < -2*self.max_q1
+            or q1 > 2*self.max_q1
+            or q1_dot < -2*self.max_q1dot
+            or q1_dot > 2*self.max_q1dot
         )
 
         self.theta_rod = q1
@@ -199,10 +200,10 @@ class Pendulum(gym.Env):
         self.theta_wheel_dot = q2_dot
         self.torque = torque
 
-        #costs = 1000 * angle_normalize(q1) ** 2 + 0.1 * q1_dot ** 2 + 0.001 * torque ** 2
+        costs = 1000 * angle_normalize(q1) ** 2 + 0.1 * q1_dot ** 2 + 0.001 * torque ** 2
         # costs = 1000 * angle_normalize(q1) ** 2 + 0.1 * q1_dot ** 2 + 0.001 * torque ** 2 + 0.00001 * q2_dot**2
         # costs = 100 * angle_normalize(q1) ** 2 + 0.00001 * q2_dot ** 2
-        costs = 100 * angle_normalize(q1) ** 2 + 1 * q1_dot ** 2 + 100 * torque ** 2 + 0.001 * q2_dot ** 2
+        # costs = 100 * angle_normalize(q1) ** 2 + 1 * q1_dot ** 2 + 100 * torque ** 2 + 0.001 * q2_dot ** 2
 
 
         #if abs(angle_normalize(q1)) < 0.001 and abs(q1_dot) < 0.001 and abs(q2_dot) < 0.1 :
