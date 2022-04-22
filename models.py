@@ -7,11 +7,11 @@ class QNet(nn.Module):
         super(QNet, self).__init__()
 
         self.net = nn.Sequential(
-            nn.Linear(input_shape, 24),
+            nn.Linear(input_shape, 6),
             nn.ReLU(),
-            nn.Linear(24, 24),
+            nn.Linear(6, 6),
             nn.ReLU(),
-            nn.Linear(24, n_actions),
+            nn.Linear(6, n_actions),
         )
         '''
         self.conv = nn.Sequential(

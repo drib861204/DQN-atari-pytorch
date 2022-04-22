@@ -13,11 +13,10 @@ from torch.utils.tensorboard import SummaryWriter
 from collections import deque
 from Pendulum_v2 import *  # added by Ben
 
-EPISODES = 1 #5000
 RENDER = 1
 SEED = 0
 SAVED_MODEL = None
-TRIAL = 4
+TRIAL = 18
 
 def timer(start, end):
     """ Helper to print training time """
@@ -97,6 +96,7 @@ def play(env, agent):
     step = 0
     total_reward = 0
     #loss = 0.
+    state_action_log = np.zeros((1, 4))
 
     # One episode.
     while True:
@@ -110,6 +110,9 @@ def play(env, agent):
         if RENDER:
             env.render(1) # Cant't use in colab.
 
+        state_action = np.append(state, action)
+        state_action_log = np.concatenate((state_action_log, np.asmatrix(state_action)), axis=0)
+
         # Store transition and learn.
         total_reward += reward
         print('\rStep: {:3d} | Reward: {:.3f} / {:.3f}'\
@@ -117,11 +120,29 @@ def play(env, agent):
             
         state = state_next.copy()
         step += 1
-        if done or step>2000:
+        if done or step>5000:
             print()
             break
 
     #return img_buffer
+    if RENDER:
+        fig, axs = plt.subplots(4)
+        fig.suptitle('DDQN Transient Response')
+        t = np.arange(0, env.dt * np.shape(state_action_log)[0], env.dt)
+        axs[0].plot(t[1:], state_action_log[1:, 0])
+        axs[3].plot(t[1:], state_action_log[1:, 1])
+        axs[1].plot(t[1:], state_action_log[1:, 2])
+        axs[2].plot(t[1:], state_action_log[1:, 3] * env.max_torque)
+        axs[0].set_ylabel('q1(rad)')
+        axs[1].set_ylabel('q2 dot(rad/s)')
+        axs[2].set_ylabel('torque(Nm)')
+        axs[3].set_ylabel('q1 dot(rad/s)')
+        axs[2].set_xlabel('time(s)')
+        # axs[0].set_ylim([-0.01,0.06])
+        # axs[0].set_ylim([-pi-0.5,pi+0.5])
+        #axs[1].set_ylim([-34, 34])
+        #axs[2].set_ylim([-12, 12])
+        plt.show()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -154,19 +175,20 @@ if __name__ == "__main__":
         device = device,
         learning_rate = 2e-4,
         reward_decay = 0.99,
-        replace_target_iter = 1000, 
+        replace_target_iter = 1000,
         memory_size = 10000,
-        batch_size = 32,)
+        batch_size = 32,
+        )
 
     t0 = time.time()
 
     if train_test == "train":
-        train(env, agent, "save", max_steps=400000)
+        train(env, agent, f"runs/rwip_{TRIAL}", max_steps=320000)
         t1 = time.time()
         timer(t0, t1)
         writer.close()
     elif train_test == "test":
-        agent.save_load_model(op="load", path="save", fname=f"qnet_{TRIAL}.pt")
+        agent.save_load_model(op="load", path=f"runs/rwip_{TRIAL}", fname=f"qnet_{TRIAL}.pt")
         for _ in range(3):
             play(env, agent)
         #img_buffer = play(env, agent, stack_frames, img_size)

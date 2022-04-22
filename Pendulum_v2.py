@@ -169,6 +169,14 @@ class Pendulum(gym.Env):
             torque = -self.max_torque
         elif action == 2:
             torque = self.max_torque
+        '''elif action == 3:
+            torque = -1
+        elif action == 4:
+            torque = 1
+        elif action == 5:
+            torque = -0.5
+        elif action == 6:
+            torque = 0.5'''
 
         # torque = action*0.01-15
 
@@ -200,11 +208,11 @@ class Pendulum(gym.Env):
         self.theta_wheel_dot = q2_dot
         self.torque = torque
 
-        costs = 1000 * angle_normalize(q1) ** 2 + 0.1 * q1_dot ** 2 + 0.001 * torque ** 2
+        # costs = 1000 * angle_normalize(q1) ** 2 + 0.1 * q1_dot ** 2 + 0.001 * torque ** 2
         # costs = 1000 * angle_normalize(q1) ** 2 + 0.1 * q1_dot ** 2 + 0.001 * torque ** 2 + 0.00001 * q2_dot**2
         # costs = 100 * angle_normalize(q1) ** 2 + 0.00001 * q2_dot ** 2
-        # costs = 100 * angle_normalize(q1) ** 2 + 1 * q1_dot ** 2 + 100 * torque ** 2 + 0.001 * q2_dot ** 2
-
+        # costs = 1000 * angle_normalize(q1) ** 2 + 0.1 * q1_dot ** 2 + 0.001 * torque ** 2 + 0.00001 * q2_dot ** 2
+        costs = 1000*angle_normalize(q1)**2
 
         #if abs(angle_normalize(q1)) < 0.001 and abs(q1_dot) < 0.001 and abs(q2_dot) < 0.1 :
         #    costs -= 1000
