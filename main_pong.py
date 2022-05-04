@@ -13,10 +13,10 @@ from torch.utils.tensorboard import SummaryWriter
 from collections import deque
 from Pendulum_v2 import *  # added by Ben
 
-RENDER = 1
+RENDER = 0
 SEED = 0
 SAVED_MODEL = None
-TRIAL = 18
+TRIAL = 21
 
 def timer(start, end):
     """ Helper to print training time """
@@ -183,7 +183,7 @@ if __name__ == "__main__":
     t0 = time.time()
 
     if train_test == "train":
-        train(env, agent, f"runs/rwip_{TRIAL}", max_steps=320000)
+        train(env, agent, f"runs/rwip_{TRIAL}", max_steps=250000)
         t1 = time.time()
         timer(t0, t1)
         writer.close()

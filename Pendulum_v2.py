@@ -95,7 +95,8 @@ class Pendulum(gym.Env):
         reset_angle = 3*pi/180
 
         if saved == None:
-            reset_high = np.array([reset_angle, self.max_q1dot, self.wheel_max_speed])
+            #reset_high = np.array([reset_angle, self.max_q1dot, self.wheel_max_speed])
+            reset_high = np.array([reset_angle, 0, 0])
             #self.state = self.np_random.uniform(low=-reset_high, high=reset_high)
             self.state = np.random.uniform(low=-reset_high, high=reset_high)
         else:
